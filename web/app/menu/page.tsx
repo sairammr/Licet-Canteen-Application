@@ -9,7 +9,7 @@ import Cart from '../components/Cart';
 
 export default function MenuPage() {
   const router = useRouter();
-  const { state, dispatch, addToCart } = useApp();
+  const { state, dispatch } = useApp();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -127,11 +127,6 @@ export default function MenuPage() {
     }
   };
 
-  const handleAddToCart = (item: any) => {
-    addToCart(item);
-    // Show a brief success message (you can implement a toast notification here)
-  };
-
   const handleCheckout = () => {
     if (state.cart.length === 0) return;
     setIsCartOpen(false);
@@ -221,10 +216,7 @@ export default function MenuPage() {
         </div>
 
         {/* Menu Section */}
-        <MenuSection
-          items={filteredItems}
-          onAddToCart={handleAddToCart}
-        />
+        <MenuSection />
       </main>
 
       {/* Cart Modal */}

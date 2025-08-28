@@ -1,77 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Order, OrderStatus } from '../types';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useApp } from '../context/AppContext';
+import { OrderStatus } from '../types';
 
 export default function OrderHistoryPage() {
+  const router = useRouter();
+  const { state, checkAuth } = useApp();
   const [selectedFilter, setSelectedFilter] = useState<OrderStatus | 'all'>('all');
 
-  // Mock order data - replace with API calls
-  const orders: Order[] = [
-    {
-      id: '1',
-      orderNumber: 'ORD-001',
-      items: [
-        {
-          itemId: '1',
-          item: {
-            id: '1',
-            name: 'Masala Dosa',
-            description: 'Crispy dosa with potato masala',
-            price: 45,
-            category: 'breakfast',
-            imageUrl: '/images/masala-dosa.jpg',
-            isAvailable: true,
-            preparationTime: 8,
-            allergens: ['dairy'],
-            dietaryInfo: { isVeg: true, isSpicy: false }
-          },
-          quantity: 2
-        }
-      ],
-      totalAmount: 90,
-      status: OrderStatus.COMPLETED,
-      paymentStatus: 'success' as any,
-      pickupLocation: 'Main Counter',
-      estimatedPickupTime: new Date(Date.now() - 86400000), // 1 day ago
-      createdAt: new Date(Date.now() - 86400000),
-      updatedAt: new Date(Date.now() - 86400000)
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-002',
-      items: [
-        {
-          itemId: '2',
-          item: {
-            id: '2',
-            name: 'Chicken Biryani',
-            description: 'Fragrant basmati rice with tender chicken',
-            price: 120,
-            category: 'lunch',
-            imageUrl: '/images/chicken-biryani.jpg',
-            isAvailable: true,
-            preparationTime: 15,
-            allergens: ['nuts'],
-            dietaryInfo: { isVeg: false, isSpicy: true }
-          },
-          quantity: 1
-        }
-      ],
-      totalAmount: 120,
-      status: OrderStatus.IN_PROGRESS,
-      paymentStatus: 'success' as any,
-      pickupLocation: 'Main Counter',
-      estimatedPickupTime: new Date(Date.now() + 1800000), // 30 minutes from now
-      createdAt: new Date(Date.now() - 1800000),
-      updatedAt: new Date(Date.now() - 1800000)
+  useEffect(() => {
+    // Check authentication
+    if (!state.isAuthenticated) {
+      router.push('/auth/login');
+      return;
     }
-  ];
+
+    checkAuth();
+  }, [state.isAuthenticated, router, checkAuth]);
 
   const filteredOrders = selectedFilter === 'all' 
-    ? orders 
-    : orders.filter(order => order.status === selectedFilter);
+    ? state.orders 
+    : state.orders.filter(order => order.status === selectedFilter);
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
@@ -111,6 +62,10 @@ export default function OrderHistoryPage() {
     }
   };
 
+  if (!state.isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -121,12 +76,12 @@ export default function OrderHistoryPage() {
               <h1 className="text-3xl font-bold text-black">Order History</h1>
               <p className="text-gray-600 mt-1">Track and manage your food orders</p>
             </div>
-            <Link
-              href="/"
+            <button
+              onClick={() => router.push('/menu')}
               className="bg-black text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors"
             >
               Order Food
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -143,10 +98,10 @@ export default function OrderHistoryPage() {
                   : 'border-gray-300 bg-white text-black hover:border-black'
               }`}
             >
-              All Orders ({orders.length})
+              All Orders ({state.orders.length})
             </button>
             {Object.values(OrderStatus).map((status) => {
-              const count = orders.filter(order => order.status === status).length;
+              const count = state.orders.filter(order => order.status === status).length;
               return (
                 <button
                   key={status}
@@ -174,7 +129,20 @@ export default function OrderHistoryPage() {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
-              <p className="text-gray-500">You haven't placed any orders yet.</p>
+              <p className="text-gray-500 mb-4">
+                {selectedFilter === 'all' 
+                  ? "You haven't placed any orders yet." 
+                  : `No orders with status "${selectedFilter.replace('_', ' ')}" found.`
+                }
+              </p>
+              {selectedFilter !== 'all' && (
+                <button
+                  onClick={() => setSelectedFilter('all')}
+                  className="text-black underline hover:text-gray-600"
+                >
+                  View all orders
+                </button>
+              )}
             </div>
           ) : (
             filteredOrders.map((order) => (
@@ -239,12 +207,12 @@ export default function OrderHistoryPage() {
                 {/* Order Actions */}
                 <div className="p-6 bg-gray-50">
                   <div className="flex gap-3">
-                    <Link
-                      href={`/orders/${order.id}`}
+                    <button
+                      onClick={() => router.push(`/orders/${order.id}`)}
                       className="flex-1 bg-black text-white py-3 px-4 rounded-lg font-medium hover:bg-gray-800 transition-colors text-center"
                     >
                       View Details
-                    </Link>
+                    </button>
                     
                     {order.status === OrderStatus.COMPLETED && (
                       <button className="flex-1 border border-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:border-black hover:text-black transition-colors">
